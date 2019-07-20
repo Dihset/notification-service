@@ -10,6 +10,8 @@ PROJECT_DIR = pathlib.Path(__file__).parent.parent
 logging.basicConfig(level=logging.DEBUG)
 
 #Database
+
+
 #database_config = config['database']
 #client = motor.motor_asyncio.AsyncIOMotorClient(
 #    database_config['host'],

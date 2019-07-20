@@ -1,39 +1,49 @@
+import logging
 from aiohttp import web
 from aiohttp.web import json_response
 from .models import Notification
+from .repositories import NotificationRepository, NotificationMongoSource
 
 
-class NotificationListView(web.View):
+class NotificationViewMixin(web.View):
+
+    def __init__(self, request):
+        super().__init__(request)
+        db = self.request.app['db']
+        self.repository = NotificationRepository(
+            NotificationMongoSource(db)
+        )
+
+
+class NotificationListView(NotificationViewMixin):
 
     async def get(self):
         pass
 
     async def post(self):
-        """
-        ---
-        summary: Create notification
-        description: This end-point allow to test that service is up.
-        tags:
-        - Notification
-        produces:
-        - application/json
-        responses:
-            "201":
-                description: Successful operation. Return created object.
-        """
         data = await self.request.json()
         notification = Notification(data)
         notification.validate()
+        result = await self.repository.save(notification)
         return json_response(
-            notification.to_primitive(),
+            dict(
+                _id=result,
+                **notification.to_primitive(),
+            ),
             status=201
         )
  
 
-class NotificationView(web.View):
+class NotificationView(NotificationViewMixin):
+
+    def __init__(self, request):
+        super().__init__(request)
+        self.obj_id = self.request.match_info['pk']
 
     async def get(self):
-        return json_response({'data': 'data'})
+        return json_response(
+            await self.repository.get_by_id(self.obj_id)
+        )
 
     async def put(self):
         pass
