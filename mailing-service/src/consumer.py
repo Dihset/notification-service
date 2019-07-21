@@ -14,7 +14,8 @@ async def send_email_consumer(smtp, scheduler, queue):
                     send_email,
                     'date',
                     run_date=email['date'],
-                    args=[smtp, email]
+                    args=[smtp, email],
+                    id=email['_id']
                 )
 
 

@@ -7,7 +7,7 @@ from .models import Notification
 class NotificationSource(metaclass=ABCMeta):
 
     @abstractmethod
-    async def get_all(self): pass
+    async def get_all(self, page=0, limit=10): pass
 
     @abstractmethod
     async def get_by_id(self, pk): pass
@@ -27,8 +27,8 @@ class NotificationRepository:
     def __init__(self, source: NotificationSource):
         self.source = source
 
-    async def get_all(self):
-        return await self.source.get_all()
+    async def get_all(self, page=0, limit=10):
+        return await self.source.get_all(page, limit)
 
     async def get_by_id(self, pk):
         return await self.source.get_by_id(pk)
@@ -50,6 +50,9 @@ class NotificationMongoSource(NotificationSource):
         self.collection = self.db['notification']
 
     async def get_all(self, page=0, limit=10):
+        count = await self.collection.count_documents({})
+        if page*limit > count:
+            raise HTTPNotFound(text='Page not found')
         cursor = self.collection.find(skip=page*limit, limit=10)
         return [self._mongo_obj_to_dict(document) for document in await cursor.to_list(length=10)]
 

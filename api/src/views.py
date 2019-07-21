@@ -19,8 +19,10 @@ class NotificationViewMixin(web.View):
 class NotificationListView(NotificationViewMixin):
 
     async def get(self):
+        params = self.request.rel_url.query
+        page = int(params.get('page', 0))
         return json_response(
-            await self.repository.get_all()
+            await self.repository.get_all(page=page)
         )
 
     async def post(self):
@@ -28,15 +30,16 @@ class NotificationListView(NotificationViewMixin):
         notification = Notification(data)
         notification.validate()
         result = await self.repository.save(notification)
+        response = dict(
+            _id=result,
+            **notification.to_primitive(),
+        )
         await send_mail_producer(
             self.exchange,
-            notification
+            response
         )
         return json_response(
-            dict(
-                _id=result,
-                **notification.to_primitive(),
-            ),
+            response,
             status=201
         )
  

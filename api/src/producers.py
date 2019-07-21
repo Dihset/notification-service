@@ -6,7 +6,7 @@ from .settings import QUEUE_NAME
 async def send_mail_producer(exchange, notification):
     await exchange.publish(
         aio_pika.Message(
-            json.dumps(notification.to_primitive()).encode(),
+            json.dumps(notification).encode(),
         ),
         routing_key=QUEUE_NAME
     )
