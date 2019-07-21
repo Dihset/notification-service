@@ -1,5 +1,6 @@
 import pathlib
 import logging
+import os
 import configparser
 
 
@@ -11,6 +12,8 @@ logging.basicConfig(level=logging.DEBUG)
 
 #Database
 
+#AMQP
+QUEUE_NAME = os.getenv('QUEUE_NAME', 'mail')
 
 #database_config = config['database']
 #client = motor.motor_asyncio.AsyncIOMotorClient(

@@ -1,8 +1,8 @@
-import logging
 from aiohttp import web
 from aiohttp.web import json_response
 from .models import Notification
 from .repositories import NotificationRepository, NotificationMongoSource
+from .producers import send_mail_producer
 
 
 class NotificationViewMixin(web.View):
@@ -13,18 +13,25 @@ class NotificationViewMixin(web.View):
         self.repository = NotificationRepository(
             NotificationMongoSource(db)
         )
+        self.exchange = self.request.app['exchange']
 
 
 class NotificationListView(NotificationViewMixin):
 
     async def get(self):
-        pass
+        return json_response(
+            await self.repository.get_all()
+        )
 
     async def post(self):
         data = await self.request.json()
         notification = Notification(data)
         notification.validate()
         result = await self.repository.save(notification)
+        await send_mail_producer(
+            self.exchange,
+            notification
+        )
         return json_response(
             dict(
                 _id=result,
@@ -49,7 +56,9 @@ class NotificationView(NotificationViewMixin):
         pass
 
     async def delete(self):
-        pass
+        return json_response(
+            await self.repository.delete(self.obj_id)
+        )
 
 
 async def handler(request):

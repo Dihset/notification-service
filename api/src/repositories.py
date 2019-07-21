@@ -19,7 +19,7 @@ class NotificationSource(metaclass=ABCMeta):
     async def delete(self, pk): pass
 
     @abstractmethod
-    async def update(self): pass
+    async def update(self, pk, fields_dict): pass
 
 
 class NotificationRepository:
@@ -39,8 +39,8 @@ class NotificationRepository:
     async def delete(self, pk):
         return await self.source.delete(pk)
 
-    async def update(self):
-        return await self.source.update()
+    async def update(self, pk, fields_dict):
+        return await self.source.update(pk, fields_dict)
 
 
 class NotificationMongoSource(NotificationSource):
@@ -49,8 +49,9 @@ class NotificationMongoSource(NotificationSource):
         self.db = db
         self.collection = self.db['notification']
 
-    async def get_all(self):
-        pass
+    async def get_all(self, page=0, limit=10):
+        cursor = self.collection.find(skip=page*limit, limit=10)
+        return [self._mongo_obj_to_dict(document) for document in await cursor.to_list(length=10)]
 
     async def get_by_id(self, pk):
         result = await self.collection.find_one({
@@ -58,15 +59,22 @@ class NotificationMongoSource(NotificationSource):
         })
         if not result:
             raise HTTPNotFound(text='Notification not found.')
-        result['_id'] = str(result['_id'])
-        return result
+        return self._mongo_obj_to_dict(result)
 
     async def save(self, obj: Notification):
         result = await self.collection.insert_one(obj.to_primitive())
         return str(result.inserted_id)
 
     async def delete(self, pk):
+        result = await self.get_by_id(pk)
+        await self.collection.delete_one({
+            '_id': ObjectId(pk)
+        })
+        return result
+
+    async def update(self, pk, fields_dict):
         pass
 
-    async def update(self):
-        pass
+    def _mongo_obj_to_dict(self, obj):
+        obj['_id'] = str(obj['_id'])
+        return obj
