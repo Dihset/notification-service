@@ -76,7 +76,10 @@ class NotificationMongoSource(NotificationSource):
         return result
 
     async def update(self, pk, fields_dict):
-        pass
+        return await self.collection.update_one(
+            {'_id': ObjectId(pk)},
+            {'$set': fields_dict}
+        )
 
     def _mongo_obj_to_dict(self, obj):
         obj['_id'] = str(obj['_id'])

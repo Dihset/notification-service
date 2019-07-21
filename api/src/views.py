@@ -56,7 +56,20 @@ class NotificationView(NotificationViewMixin):
         )
 
     async def put(self):
-        pass
+        data = await self.request.json()
+        notification_dict = await self.repository.get_by_id(self.obj_id)
+        del notification_dict['_id']
+        notification_dict.update(data)
+        notification = Notification(notification_dict)
+        notification.validate()
+        await self.repository.update(self.obj_id, notification.to_primitive())
+        return json_response(
+            dict(
+                _id=self.obj_id,
+                **notification.to_primitive()
+            ),
+            status=200
+        )
 
     async def delete(self):
         return json_response(
